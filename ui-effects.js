@@ -2,14 +2,14 @@ const sun = document.querySelector('#sun')
 const earth = document.querySelector('#earth')
 const bluePlanet = document.querySelector('#blue-planet')
 const astronaut = document.querySelector('#astronaut')
-// const fixedTitle = document.querySelector('.fixed-title')
+const stars = document.querySelector('.stars')
 
 
 function generateRandomValues() {
   const animationDuration = Math.random() * 5
   const size = Math.random() * 3
-  const x = Math.random() * (innerWidth - size)
-  const y = Math.random() * (innerHeight - size)
+  const x = Math.random() * (window.innerWidth - size)
+  const y = Math.random() * (window.innerHeight - size)
 
   return { animationDuration, size, x, y }
 }
@@ -34,37 +34,73 @@ function insertStarsInToDOM() {
   let count = 200
   
   if (window.innerWidth <= 600) {
-    count = 70
+    count = 55
   }
 
   while (i < count) {
     star = createStar()
-    document.body.appendChild(star)
+    stars.appendChild(star)
     i++
   }
 }
 
-function parallaxEffect() {
+function parallaxEffect(element, styles) {
   const { scrollTop } = document.documentElement
+  const stylesAsArray = Object.entries(styles)
   
-  if (window.innerWidth <= 600) {
-    
-    earth.style.top = `${30 + (scrollTop * 0.03)}%`
-    bluePlanet.style.top = `${20 + (scrollTop * 0.05)}%`
-    
-  } else {
-    
-    earth.style.top = `${40 + (scrollTop * 0.02)}%`
-    bluePlanet.style.top = `${30 + (scrollTop * 0.04)}%`
-    
-  }
+  const css = stylesAsArray.map(([attr, value]) => {
+    const regex = /[\|]+(.+)[\|]/
+    const replacer = (_, cssRules) => `calc(${cssRules})`
   
-  astronaut.style.transform = `rotateZ(-${scrollTop * 0.2}deg)`
-  astronaut.style.left = `${10 + (scrollTop * 0.03)}%`
-  astronaut.style.bottom = `${20 - (scrollTop * 0.01)}%`
+    return `${attr}: ${value}`.replace(regex, replacer)
+  })
   
-  sun.style.top = `${scrollTop * 0.7}px`
+  element.style = css.join(';').replace(/innerY/g, scrollTop)
 }
 
-window.addEventListener('scroll', parallaxEffect)
+function applyParallaxEffect(stylesRule) {
+  for (let position in stylesRule) {
+    const css = stylesRule[position]
+    parallaxEffect(css.element, css.style)
+  }
+}
+
+function handleStyles() {
+  const condition = window.innerWidth <= 600
+  
+  const stylesRule = [
+    {
+      element: stars, 
+      style: {top: '|innerY * 1px|'}
+    },
+    {
+      element: sun, 
+      style: {top: '|innerY * 0.8px|'}
+    },
+    {
+      element: earth,
+      style: condition ? 
+        {top: '|30% + innerY * 0.3px|'} :
+        {top: '|40% + innerY * 0.2px|'}
+    },
+    {
+      element: bluePlanet,
+      style: condition ?
+        {top: '|20% + innerY * 0.5px|'} :
+        {top: '|30% + innerY * 0.4px|'}
+    },
+    {
+      element: astronaut,
+      style: {
+        transform: 'rotateZ(|innerY * (-0.3deg)|)',
+        left: '|10% + innerY * 0.2px|',
+        bottom: '|20% - innerY * 0.05px|'
+      }
+    }
+  ]
+  
+  applyParallaxEffect(stylesRule)
+}
+
+window.addEventListener('scroll', handleStyles)
 window.addEventListener('load', insertStarsInToDOM)
